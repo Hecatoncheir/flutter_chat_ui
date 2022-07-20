@@ -37,6 +37,7 @@ class Chat extends StatefulWidget {
     this.customDateHeaderText,
     this.customMessageBuilder,
     this.customStatusBuilder,
+    this.messageAreaBuilder,
     this.dateFormat,
     this.dateHeaderBuilder,
     this.dateHeaderThreshold = 900000,
@@ -119,6 +120,10 @@ class Chat extends StatefulWidget {
   /// See [Message.customStatusBuilder].
   final Widget Function(types.Message message, {required BuildContext context})?
       customStatusBuilder;
+
+  /// Build a custom area with predefined message.
+  final Widget Function(types.Message message, Message child)?
+      messageAreaBuilder;
 
   /// Allows you to customize the date format. IMPORTANT: only for the date,
   /// do not return time here. See [timeFormat] to customize the time format.
@@ -479,7 +484,7 @@ class _ChatState extends State<Chat> {
               ? min(constraints.maxWidth * 0.72, 440).floor()
               : min(constraints.maxWidth * 0.78, 440).floor();
 
-      return Message(
+      final messageWidget = Message(
         key: ValueKey(message.id),
         avatarBuilder: widget.avatarBuilder,
         bubbleBuilder: widget.bubbleBuilder,
@@ -520,6 +525,11 @@ class _ChatState extends State<Chat> {
         usePreviewData: widget.usePreviewData,
         userAgent: widget.userAgent,
       );
+
+      final messageAreaBuilder = widget.messageAreaBuilder;
+      return messageAreaBuilder == null
+          ? messageWidget
+          : messageAreaBuilder(message, messageWidget);
     }
   }
 
