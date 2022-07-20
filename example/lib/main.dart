@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -38,9 +39,13 @@ class _ChatPageState extends State<ChatPage> {
   List<types.Message> _messages = [];
   final _user = const types.User(id: '82091008-a484-4a89-ae75-a22bf8d6f3ac');
 
+  late final TextEditingController _textEditingController;
+  types.Message? _messageForEdit;
+
   @override
   void initState() {
     super.initState();
+    _textEditingController = TextEditingController();
     _loadMessages();
   }
 
@@ -54,6 +59,8 @@ class _ChatPageState extends State<ChatPage> {
           onSendPressed: _handleSendPressed,
           showUserAvatars: true,
           showUserNames: true,
+          messageAreaBuilder: _messageAreaBuilder,
+          textEditingController: _textEditingController,
           user: _user,
         ),
       );
@@ -213,6 +220,19 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _handleSendPressed(types.PartialText message) {
+    final messageForEdit = _messageForEdit;
+    if (messageForEdit != null && messageForEdit is types.TextMessage) {
+      final updatedMessage = messageForEdit.copyWith(text: message.text);
+
+      setState(() {
+        final messageIndex = _messages.indexOf(messageForEdit);
+        _messages[messageIndex] = updatedMessage;
+        _messageForEdit = null;
+      });
+
+      return;
+    }
+
     final textMessage = types.TextMessage(
       author: _user,
       createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -233,4 +253,56 @@ class _ChatPageState extends State<ChatPage> {
       _messages = messages;
     });
   }
+
+  Widget _messageAreaBuilder(types.Message message, Message child) => Slidable(
+        startActionPane: message.author.id != _user.id
+            ? ActionPane(
+                motion: const DrawerMotion(),
+                dragDismissible: false,
+                children: [
+                  SlidableAction(
+                    onPressed: (_) {},
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.grey,
+                    icon: Icons.share,
+                    label: 'Share',
+                  ),
+                ],
+              )
+            : null,
+
+        // The end action pane is the one at the right or the bottom side.
+        endActionPane: message.author.id == _user.id
+            ? ActionPane(
+                motion: const DrawerMotion(),
+                dragDismissible: false,
+                children: [
+                  SlidableAction(
+                    onPressed: (_) {
+                      if (message is types.TextMessage) {
+                        _textEditingController.text = message.text;
+                        _messageForEdit = message;
+                      }
+                    },
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.grey,
+                    icon: Icons.archive,
+                    label: 'Update',
+                  ),
+                  SlidableAction(
+                    onPressed: (_) {
+                      setState(() {
+                        _messages.remove(message);
+                      });
+                    },
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.grey,
+                    icon: Icons.delete_forever,
+                    label: 'Delete',
+                  ),
+                ],
+              )
+            : null,
+        child: child,
+      );
 }
