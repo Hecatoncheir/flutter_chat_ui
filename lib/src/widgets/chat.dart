@@ -39,6 +39,7 @@ class Chat extends StatefulWidget {
     this.bubbleRtlAlignment = BubbleRtlAlignment.right,
     this.customBottomWidget,
     this.customDateHeaderText,
+    this.messageAreaBuilder,
     this.customMessageBuilder,
     this.customStatusBuilder,
     this.dateFormat,
@@ -127,6 +128,10 @@ class Chat extends StatefulWidget {
   /// for example today, yesterday and before. Or you can just return the same
   /// date header for any message.
   final String Function(DateTime)? customDateHeaderText;
+
+  /// Build a custom area with predefined message.
+  final Widget Function(types.Message message, Widget child)?
+      messageAreaBuilder;
 
   /// See [Message.customMessageBuilder].
   final Widget Function(types.CustomMessage, {required int messageWidth})?
@@ -597,11 +602,16 @@ class ChatState extends State<Chat> {
         );
       }
 
+      final messageAreaBuilder = widget.messageAreaBuilder;
+      final updatedMessageWidget = messageAreaBuilder == null
+          ? messageWidget
+          : messageAreaBuilder(message, messageWidget);
+
       return AutoScrollTag(
         controller: _scrollController,
         index: index ?? -1,
         key: Key('scroll-${message.id}'),
-        child: messageWidget,
+        child: updatedMessageWidget,
       );
     }
   }
